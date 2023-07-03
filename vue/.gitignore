@@ -1,0 +1,32 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+
+node_modules
+dist
+dist-ssr
+*.local
+
+
+# Editor directories and files
+.vscode/*
+# 保持所有开发者安装了相同的插件和相同的配置，保持开发环境一致性。
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+
+# 记录 node_modules 目录下所有模块的具体来源和版本号以及其他的信息。
+package-lock.json
+yarn.lock
