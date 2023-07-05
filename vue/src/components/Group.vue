@@ -57,42 +57,22 @@
 
 <script setup lang="ts">
 import { reactive } from 'vue';
-import Rule from '../components/Rule.vue';
-// import { RuleInterface, GroupInterface, Props } from '../view/Filter.vue';
 
-interface RuleInterface {
-  column: string;
-  logic: string;
-  expect: (string | number)[];
-}
+import { RuleInterface, GroupInterface, Column } from '../view/Filter.vue';
 
-//  Group 组件核心的接口, 代表已选的 NOT, 运算符和规则
-interface GroupInterface {
-  isNot: boolean;
-  operator: string;
-  rules: (RuleInterface | GroupInterface)[];
-}
 
-// 保存当前组件已选的列名, 类型, 列的数据的接口
-interface Column {
-  column: string;
-  type: number;
-  data: (string | number)[];
-}
-
-// 父页面传给该子组件的值的接口
 interface Props {
   parentIndex: number;
   parentColumn: Column[];
 }
 
-// 从父页面传过来的值
+
 const props = defineProps<Props>();
 
-// 父页面提供给子组件调用的方法
+
 const emits = defineEmits(['parentDeleteItem', 'getChildRule']);
 
-//  Group 组件的实例
+
 const group = reactive<GroupInterface>({
   isNot: false,
   operator: '',
@@ -105,7 +85,7 @@ const group = reactive<GroupInterface>({
   ],
 });
 
-// 给当前组件添加一个 Rule 子组件, 并且数据会同步到所有父组件
+
 const addRule = () => {
   group.rules.push({
     column: '',
@@ -116,7 +96,7 @@ const addRule = () => {
   sync();
 };
 
-// 给当前组件添加一个 Group 子组件, 并且数据会同步到所有父组件
+
 const addGroup = () => {
   group.rules.push({
     isNot: false,
@@ -133,7 +113,7 @@ const addGroup = () => {
   sync();
 };
 
-// 提供给子组件调用的方法, 用于子组件删除自身, 并且数据会同步到所有父组件
+
 const deleteItem = (index: number) => {
   group.rules.splice(index, 1);
   if (group.operator != '' && group.rules.length == 1) {
@@ -142,13 +122,13 @@ const deleteItem = (index: number) => {
   sync();
 };
 
-// 提供给子组件调用的方法, 子组件数据修改后需调用该方法, 并且数据会同步到所有父组件
+
 const getChildRule = (rule: RuleInterface | GroupInterface, index: number) => {
   group.rules[index] = rule;
   sync();
 };
 
-// 子组件修改后同步父页面(组件)的数据的方法
+
 const sync = () => {
   emits('getChildRule', group, props.parentIndex);
 };

@@ -93,13 +93,13 @@ import Rule from '../components/Rule.vue';
 import Group from '../components/Group.vue';
 import axios from 'axios';
 
-// 保存查询结果数据的接口, 代表结果集合和表头
+
 interface Table {
   data: any[];
   header: string[];
 }
 
-// 从后端获取将操作的表的各个列
+
 const queryColumn = () => {
   axios
     .get('/api/getSql')
@@ -114,12 +114,12 @@ const queryColumn = () => {
     });
 };
 
-// 保存要操作的各个列的数据
+
 const parentColumn: Column[] = reactive([]);
-// 初始化时直接调用该方法
+
 queryColumn();
 
-// Group 接口的实例
+
 const group = reactive<GroupInterface>({
   isNot: false,
   operator: '',
@@ -171,24 +171,24 @@ const getChildRule = (rule: RuleInterface | GroupInterface, index: number) => {
   group.rules[index] = rule;
 };
 
-// 重置所有规则和括号, 但是有点小问题
+
 const reSet = () => {
   group.isNot = false;
   group.operator = '';
   group.rules.splice(0, group.rules.length);
-  // addRule(); // 加上这一句会导致下标为 0 的数组清除失败
+  
   queryColumn();
   table.data.splice(0, table.data.length);
   table.header.splice(0, table.header.length);
 };
 
-// 弹出框展示的内容, 代表是否显示弹出框和内容
+
 const dialog = reactive<{ dialogVisible: boolean; sql: string }>({
   dialogVisible: false,
   sql: '',
 });
 
-// 把规则和括号转换为 SQL 语句
+
 const toSQL = (group: GroupInterface): string => {
   let result: string = '';
   const condition: string[] = [];
@@ -214,29 +214,8 @@ const toSQL = (group: GroupInterface): string => {
   return result;
 };
 
-/*
-"equal", => =
-"not equal", => !=
-"in",
-"not in",
-"is null",
-"is not null",
-"begins with", => LIKE '...%'
-"doesn't begin with", => NOT LIKE  '...%'
-"contains",  => LIKE  '%...%'
-"doesn't contains", => NOT LIKE  '%...%'
-"ends with",  => LIKE  '%...'
-"doesn't end with",  => NOT LIKE  '%...'
-"is empty", => = ''
-"is not empty", => != ''
-"less", => <
-"less or equal", => <=
-"greater", => >
-"greater or equal", => >=
-"between", => BETWEEN ... AND ...
-"not between", => NOT BETWEEN ... AND ...
-*/
-// 在转换过程中, 对逻辑运算符和期望值的处理
+
+
 const logicHandler = (logic: string, expect: (string | number)[]): string => {
   let result: string = '';
   switch (logic) {
@@ -304,13 +283,13 @@ const logicHandler = (logic: string, expect: (string | number)[]): string => {
   return result;
 };
 
-// Table 接口的实例
+
 const table = reactive<Table>({
   data: [],
   header: [],
 });
 
-// 从后端获取查询结果并覆盖旧的查询结果, 最终保存在 table
+
 const query = () => {
   table.data.splice(0, table.data.length);
   table.header.splice(0, table.header.length);
@@ -325,7 +304,7 @@ const query = () => {
       res.data.forEach((item: any) => {
         table.data.push(item);
       });
-      // 获取表头(即列名)
+      
       Object.keys(table.data[0]).forEach((item: string) => {
         table.header.push(item);
       });
@@ -335,7 +314,7 @@ const query = () => {
     });
 };
 
-// 把规则和括号转换为带占位符的 SQL 语句
+
 const toSQLStatement = (
   group: GroupInterface
 ): { statement: string; params: { type: string; data: string | number }[] } => {
@@ -376,7 +355,7 @@ const toSQLStatement = (
   return { statement: result, params: params };
 };
 
-// 对即将填充到占位符的某些期望值进行处理
+
 const expectHandler = (
   logic: string,
   expect: string | number
@@ -405,7 +384,7 @@ const expectHandler = (
   return { isExist, expect };
 };
 
-// 对转换为带占位符的 SQL 语句的逻辑运算符进行处理
+
 const otherLogicHandler = (logic: string): string => {
   let result: string = '';
   switch (logic) {
@@ -475,31 +454,25 @@ const otherLogicHandler = (logic: string): string => {
 </script>
 
 <script lang="ts">
-// RULE 组件核心的接口, 代表已选的列, 逻辑运算符和期待的值
+
 export interface RuleInterface {
   column: string;
   logic: string;
   expect: (string | number)[];
 }
 
-//  Group 组件核心的接口, 代表已选的 NOT, 运算符和规则
+
 export interface GroupInterface {
   isNot: boolean;
   operator: string;
   rules: (RuleInterface | GroupInterface)[];
 }
 
-// 保存当前组件已选的列名, 类型, 列的数据的接口
+
 export interface Column {
   column: string;
   type: number;
   data: (string | number)[];
-}
-
-// 父页面传给该子组件的值的接口
-export interface Props {
-  parentIndex: number;
-  parentColumn: Column[];
 }
 </script>
 
