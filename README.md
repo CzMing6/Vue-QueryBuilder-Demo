@@ -16,5 +16,5 @@ params: 填充占位符的参数
 
 
 
-**演示视频**
-https://music.163.com/#/video?id=9B8E7B6D727C306B3622EF94797047DD
+**演示图片**
+https://raw.githubusercontent.com/CzMing6/Vue-QueryBuilder-Demo/master/images/
