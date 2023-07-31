@@ -17,4 +17,5 @@ params: 填充占位符的参数
 
 
 **演示图片**
-https://raw.githubusercontent.com/CzMing6/Vue-QueryBuilder-Demo/master/images/
+
+![DemoPicture](https://raw.githubusercontent.com/CzMing6/Vue-QueryBuilder-Demo/master/images/DemoPicture.jpg)
