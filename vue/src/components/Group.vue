@@ -23,7 +23,7 @@
         <el-row justify="end">
           <el-button type="success" @click="addRule">添加规则</el-button>
           <el-button type="success" @click="addGroup">添加括号</el-button>
-          <el-button type="danger" @click="emits('parentDeleteItem')"
+          <el-button v-if="props.parentIndex != -1" type="danger" @click="emits('parentDeleteItem')"
             >删除
           </el-button>
         </el-row>
@@ -57,7 +57,7 @@
 
 <script setup lang="ts">
 import { reactive } from 'vue';
-
+import Rule from '../components/Rule.vue';
 import { RuleInterface, GroupInterface, Column } from '../view/Filter.vue';
 
 
@@ -76,13 +76,7 @@ const emits = defineEmits(['parentDeleteItem', 'getChildRule']);
 const group = reactive<GroupInterface>({
   isNot: false,
   operator: '',
-  rules: [
-    {
-      column: '',
-      logic: '',
-      expect: [],
-    },
-  ],
+  rules: [],
 });
 
 
@@ -130,7 +124,12 @@ const getChildRule = (rule: RuleInterface | GroupInterface, index: number) => {
 
 
 const sync = () => {
-  emits('getChildRule', group, props.parentIndex);
+  
+  if(props.parentIndex == -1)
+    emits('getChildRule', group);
+  else {
+    emits('getChildRule', group, props.parentIndex);
+  }
 };
 </script>
 

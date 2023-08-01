@@ -1,61 +1,21 @@
 <template>
   <el-card class="box-card">
-    <el-row>
-      <el-col :span="12">
-        <el-row>
-          <el-switch
-            v-model="group.isNot"
-            inline-prompt
-            active-text="NOT"
-            width="50"
-            :disabled="group.rules.length <= 1"
-          />
-          <el-radio-group
-            v-model="group.operator"
-            :disabled="group.rules.length <= 1"
-          >
-            <el-radio-button label="AND" />
-            <el-radio-button label="OR" />
-          </el-radio-group>
-        </el-row>
-      </el-col>
-      <el-col :span="12">
-        <el-row justify="end">
-          <el-button type="success" @click="addRule">添加规则</el-button>
-          <el-button type="success" @click="addGroup">添加括号</el-button>
-        </el-row>
-      </el-col>
-    </el-row>
-
-    <template v-for="(item, index) in group.rules" :key="index">
-      <el-row v-if="'column' in item">
-        <el-col>
-          <Rule
-            v-if="parentColumn.length != 0"
-            @parentDeleteItem="deleteItem(index)"
-            @getChildRule="getChildRule"
-            :parentIndex="index"
-            :parentColumn="parentColumn"
-          ></Rule>
-        </el-col>
-      </el-row>
-      <el-row v-if="'isNot' in item">
+      <el-row>
         <el-col>
           <Group
-            @parentDeleteItem="deleteItem(index)"
+            @parentDeleteItem=""
             @getChildRule="getChildRule"
-            :parentIndex="index"
+            :parentIndex=-1
             :parentColumn="parentColumn"
           ></Group>
         </el-col>
       </el-row>
-    </template>
     <el-row>
       <el-button type="primary" @click="reSet">重置</el-button>
       <el-button
         type="primary"
         @click="
-          dialog.sql = toSQL(group);
+          dialog.sql = toSQL(shell.group);
           dialog.dialogVisible = true;
         "
         >SQL</el-button
@@ -89,9 +49,9 @@
 
 <script setup lang="ts">
 import { reactive } from 'vue';
-import Rule from '../components/Rule.vue';
 import Group from '../components/Group.vue';
 import axios from 'axios';
+import { toSQL, toSQLStatement } from '../utils/common';
 
 
 interface Table {
@@ -120,63 +80,28 @@ const parentColumn: Column[] = reactive([]);
 queryColumn();
 
 
-const group = reactive<GroupInterface>({
-  isNot: false,
-  operator: '',
-  rules: [
-    {
-      column: '',
-      logic: '',
-      expect: [],
-    },
-  ],
-});
-
-const addRule = () => {
-  group.rules.push({
-    column: '',
-    logic: '',
-    expect: [],
-  });
-  if (group.operator == '' && group.rules.length == 2) {
-    group.operator = 'AND';
-  }
-};
-
-const addGroup = () => {
-  group.rules.push({
+const shell: {group: GroupInterface} = {
+  group: {
     isNot: false,
     operator: '',
-    rules: [
-      {
-        column: '',
-        logic: '',
-        expect: [],
-      },
-    ],
-  });
-  if (group.operator == '' && group.rules.length == 2) {
-    group.operator = 'AND';
+    rules: [],
   }
 };
 
-const deleteItem = (index: number) => {
-  group.rules.splice(index, 1);
-  if (group.operator != '' && group.rules.length == 1) {
-    group.operator = '';
-  }
-};
-
-const getChildRule = (rule: RuleInterface | GroupInterface, index: number) => {
-  group.rules[index] = rule;
+const getChildRule = (rule: GroupInterface) => {
+  shell.group = rule;
 };
 
 
 const reSet = () => {
-  group.isNot = false;
-  group.operator = '';
-  group.rules.splice(0, group.rules.length);
+  shell.group.isNot = false;
+  shell.group.operator = '';
+
   
+  
+  
+  shell.group.rules.splice(0, shell.group.rules.length);
+
   queryColumn();
   table.data.splice(0, table.data.length);
   table.header.splice(0, table.header.length);
@@ -189,101 +114,6 @@ const dialog = reactive<{ dialogVisible: boolean; sql: string }>({
 });
 
 
-const toSQL = (group: GroupInterface): string => {
-  let result: string = '';
-  const condition: string[] = [];
-  group.rules.forEach((item, index) => {
-    if ('column' in item) {
-      const { column, logic, expect } = item;
-      condition[index] = column + ' ' + logicHandler(logic, expect);
-    } else {
-      condition[index] = '(' + toSQL(item) + ')';
-    }
-  });
-  const { isNot, operator } = group;
-  for (let index = 0; index < condition.length; index++) {
-    if (index == 0 && isNot) {
-      result = result.concat('NOT (' + condition[index] + ' ' + operator + ' ');
-    } else if (index == condition.length - 1) {
-      if (isNot) result = result.concat(condition[index] + ') ');
-      else result = result.concat(condition[index]);
-    } else {
-      result = result.concat(condition[index] + ' ' + operator + ' ');
-    }
-  }
-  return result;
-};
-
-
-
-const logicHandler = (logic: string, expect: (string | number)[]): string => {
-  let result: string = '';
-  switch (logic) {
-    case 'equal':
-      result = '= ' + expect[0];
-      break;
-    case 'not equal':
-      result = '!= ' + expect[0];
-      break;
-    case 'in':
-      result = 'IN(' + expect[0] + ')';
-      break;
-    case 'not in':
-      result = 'NOT IN(' + expect[0] + ')';
-      break;
-    case 'is null':
-      result = 'IS NULL';
-      break;
-    case 'is not null':
-      result = 'IS NOT NULL';
-      break;
-    case 'begins with':
-      result = "LIKE '" + expect[0] + "%'";
-      break;
-    case "doesn't begin with":
-      result = "NOT LIKE '" + expect[0] + "%'";
-      break;
-    case 'contains':
-      result = "LIKE '%" + expect[0] + "%'";
-      break;
-    case "doesn't contains":
-      result = "NOT LIKE '%" + expect[0] + "%'";
-      break;
-    case 'ends with':
-      result = "LIKE '%" + expect[0] + "'";
-      break;
-    case "doesn't end with":
-      result = "NOT LIKE '%" + expect[0] + "'";
-      break;
-    case 'is empty':
-      result = 'IS EMPTY';
-      break;
-    case 'is not empty':
-      result = 'IS NOT EMPTY';
-      break;
-    case 'less':
-      result = '< ' + expect[0];
-      break;
-    case 'less or equal':
-      result = '<= ' + expect[0];
-      break;
-    case 'greater':
-      result = '> ' + expect[0];
-      break;
-    case 'greater or equal':
-      result = '>= ' + expect[0];
-      break;
-    case 'between':
-      result = 'BETWEEN ' + expect[0] + ' AND ' + expect[1];
-      break;
-    case 'not between':
-      result = 'NOT BETWEEN ' + expect[0] + ' AND ' + expect[1];
-      break;
-  }
-  return result;
-};
-
-
 const table = reactive<Table>({
   data: [],
   header: [],
@@ -293,7 +123,7 @@ const table = reactive<Table>({
 const query = () => {
   table.data.splice(0, table.data.length);
   table.header.splice(0, table.header.length);
-  const { statement, params } = toSQLStatement(group);
+  const { statement, params } = toSQLStatement(shell.group);
   
   axios
     .post('/api/query', {
@@ -312,144 +142,6 @@ const query = () => {
     .catch((error) => {
       console.error(error);
     });
-};
-
-
-const toSQLStatement = (
-  group: GroupInterface
-): { statement: string; params: { type: string; data: string | number }[] } => {
-  let result: string = '';
-  const condition: string[] = [];
-  const params: { type: string; data: string | number }[] = [];
-  group.rules.forEach((item, index) => {
-    if ('column' in item) {
-      const { column, logic, expect } = item;
-      condition[index] = column + ' ' + otherLogicHandler(logic);
-      expect.forEach((item) => {
-        const { isExist, expect } = expectHandler(logic, item);
-        if (isExist)
-          params.push({
-            type: column,
-            data: expect,
-          });
-      });
-    } else {
-      const {statement, params: param} = toSQLStatement(item);
-      condition[index] = '(' + statement + ')';
-      param.forEach((item) => {
-        params.push(item);
-      });
-    }
-  });
-  const { isNot, operator } = group;
-  for (let index = 0; index < condition.length; index++) {
-    if (index == 0 && isNot) {
-      result = result.concat('NOT (' + condition[index] + ' ' + operator + ' ');
-    } else if (index == condition.length - 1) {
-      if (isNot) result = result.concat(condition[index] + ') ');
-      else result = result.concat(condition[index]);
-    } else {
-      result = result.concat(condition[index] + ' ' + operator + ' ');
-    }
-  }
-  return { statement: result, params: params };
-};
-
-
-const expectHandler = (
-  logic: string,
-  expect: string | number
-): { isExist: boolean; expect: string | number } => {
-  let isExist = true;
-  switch (logic) {
-    case 'begins with':
-    case "doesn't begin with":
-      expect = expect + '%';
-      break;
-    case 'contains':
-    case "doesn't contains":
-      expect = '%' + expect + '%';
-      break;
-    case 'ends with':
-    case "doesn't end with":
-      expect = '%' + expect;
-      break;
-    case 'is null':
-    case 'is not null':
-    case 'is empty':
-    case 'is not empty':
-      isExist = false;
-      break;
-  }
-  return { isExist, expect };
-};
-
-
-const otherLogicHandler = (logic: string): string => {
-  let result: string = '';
-  switch (logic) {
-    case 'equal':
-      result = '= ?';
-      break;
-    case 'not equal':
-      result = '!= ?';
-      break;
-    case 'in':
-      result = 'IN(?)';
-      break;
-    case 'not in':
-      result = 'NOT IN(?)';
-      break;
-    case 'is null':
-      result = 'IS NULL';
-      break;
-    case 'is not null':
-      result = 'IS NOT NULL';
-      break;
-    case 'begins with':
-      result = 'LIKE ?';
-      break;
-    case "doesn't begin with":
-      result = 'NOT LIKE ?';
-      break;
-    case 'contains':
-      result = 'LIKE ?';
-      break;
-    case "doesn't contains":
-      result = 'NOT LIKE ?';
-      break;
-    case 'ends with':
-      result = 'LIKE ?';
-      break;
-    case "doesn't end with":
-      result = 'NOT LIKE ?';
-      break;
-    case 'is empty':
-      result = "= ''";
-      break;
-    case 'is not empty':
-      result = "!= ''";
-      break;
-    case 'less':
-      result = '< ?';
-      break;
-    case 'less or equal':
-      result = '<= ?';
-      break;
-    case 'greater':
-      result = '> ?';
-      break;
-    case 'greater or equal':
-      result = '>= ?';
-      break;
-    case 'between':
-      result = 'BETWEEN ? AND ?';
-      break;
-    case 'not between':
-      result = 'NOT BETWEEN ? AND ?';
-      break;
-  }
-  return result;
 };
 </script>
 
